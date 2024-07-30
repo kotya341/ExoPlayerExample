@@ -1,19 +1,26 @@
 package com.example.exoplayerexample
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -30,6 +37,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.AspectRatioFrameLayout.ResizeMode
 import androidx.media3.ui.PlayerView
 import com.example.exoplayerexample.data.Video
 import com.example.exoplayerexample.data.data
@@ -42,21 +50,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ExoPlayerExampleTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    List(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                List(
+                    modifier = Modifier.padding(20.dp)
+                )
             }
         }
     }
 }
 
+@kotlin.OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun List(modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
     ) {
+
         items(
             count = data.size,
         ) { index ->
@@ -82,7 +90,7 @@ fun VideoPlayer(
     )
     {
         VideoPlayer(
-            modifier = modifier,
+            modifier = modifier.height(420.dp),
             player = exoPlayer,
         )
     }
@@ -93,25 +101,28 @@ fun VideoPlayer(
 fun VideoPlayer(
     player: ExoPlayer,
     modifier: Modifier = Modifier,
-    resizeMode: @AspectRatioFrameLayout.ResizeMode Int = AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+    resizeMode: @ResizeMode Int = AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
 ) {
-    val size = 380.dp.dpToPx()
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Green),
     ) {
         AndroidView(
-
             modifier = Modifier.align(Alignment.BottomCenter),
             factory = {
-                MyStyledPlayerView(it).apply {
+                PlayerView(it).apply {
+//                providePlayerView(it).apply {
                     Log.e("videoProvider", "MyStyledPlayerView init")
-                    this.size = size
                     setUseController(useController)
                     this.player = player
                     keepScreenOn = true
                     this.resizeMode = resizeMode
+
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
 
                     // to show a boarders
                     val rnd = Random()
@@ -121,7 +132,7 @@ fun VideoPlayer(
                         rnd.nextInt(256),
                         rnd.nextInt(256)
                     )
-
+                    clipToOutline = true
                     setBackgroundColor(color)
 
                     // the view ignores the padding of the parent without at least 1dp padding on it's own
@@ -132,9 +143,6 @@ fun VideoPlayer(
         )
     }
 }
-
-@Composable
-fun Dp.dpToPx() = with(LocalDensity.current) { this@dpToPx.toPx().toInt() }
 
 
 @OptIn(UnstableApi::class)
@@ -147,9 +155,18 @@ private fun PlayerView.setupDefaultControlButtons() {
 }
 
 private class MyStyledPlayerView(content: Context) : PlayerView(content) {
+
     var size: Int = 0
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val heightMeasureSpec1 = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
         super.onMeasure(widthMeasureSpec, heightMeasureSpec1)
     }
+}
+
+
+@OptIn(UnstableApi::class)
+@SuppressLint("InflateParams")
+private fun providePlayerView(context: Context): PlayerView {
+    val view = LayoutInflater.from(context).inflate(R.layout.feed_list_video_view, null, false)
+    return view.findViewById(R.id.styled_player_view)
 }
